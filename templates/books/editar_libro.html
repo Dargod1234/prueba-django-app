@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar {{ libro.titulo }} - Biblioteca{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <h1>Editar Libro</h1>
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="mb-3">
+                {{ field.label_tag }}
+                {{ field }}
+                {% if field.help_text %}
+                <small class="form-text text-muted">{{ field.help_text
+                    }}</small>
+                {% endif %}
+                {% for error in field.errors %}
+                <div class="alert alert-danger mt-1">{{ error }}</div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">Guardar
+                Cambios</button>
+            <a href="{% url 'books:detalle_libro' libro.pk %}"
+                class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+# .gitignore
+# Entorno virtual
+/venv/
+/.env
+
+# Base de datos SQLite
+*.sqlite3
+
+# Archivos de caché
+__pycache__/
+*.pyc
+
+# Static files collected by collectstatic
+/staticfiles/
+
+# Media files (if you have them)
+/media/
+
+# IDE-specific files
+.vscode/
+.idea/
