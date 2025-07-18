@@ -18,8 +18,8 @@
                     href="{% url 'books:listar_libros' %}">📚 Biblioteca</a>
                 <div class="navbar-nav ms-auto">
                     {% if user.is_authenticated %}
-                    <span class="navbar-text me-3">Hola, <strong>{{
-                            user.username }}</strong></span>
+                    <span class="navbar-text me-3">Hola,
+                        <strong>{{user.username}}</strong></span>
                     {% if user.rol == 'admin' %}
                     <a class="nav-link"
                         href="{% url 'books:crear_libro' %}">Crear Libro</a>
