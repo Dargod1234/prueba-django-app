@@ -1,6 +1,7 @@
 from pathlib import Path
-from decouple import config, UndefinedValueError # Importamos UndefinedValueError
+from decouple import config, UndefinedValueError
 import dj_database_url
+import os # Importar os para la compatibilidad con el entorno de Heroku para el static
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -16,9 +17,9 @@ if not DEBUG:
     # Para producción, debes especificar los hosts permitidos.
     # Heroku usa su propio dominio.
     # Reemplaza 'your-app-name.herokuapp.com' con el nombre real de tu app de Heroku.
-    ALLOWED_HOSTS = ['.herokuapp.com', 'your-app-name.herokuapp.com'] # Añade aquí tu dominio personalizado si tienes uno
+    ALLOWED_HOSTS = ['.herokuapp.com', 'prueba-django.herokuapp.com'] # Asegúrate de que este sea el nombre de tu app Heroku
 else:
-    # Para desarrollo local, permitir localhost y 127.0.0.1
+    # Para desarrollo local
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
@@ -37,6 +38,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # WhiteNoise debe ir después de SecurityMiddleware para servir estáticos de forma segura
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware', # CorsMiddleware en la posición correcta
     'django.middleware.common.CommonMiddleware',
@@ -44,8 +47,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # Middleware para WhiteNoise (para servir estáticos en producción)
-    'whitenoise.middleware.WhiteNoiseMiddleware', 
 ]
 
 ROOT_URLCONF = 'biblioteca.urls'
@@ -69,31 +70,30 @@ TEMPLATES = [
 WSGI_APPLICATION = 'biblioteca.wsgi.application'
 
 # Database
-# Configuración de base de datos para desarrollo (desde .env)
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT'),
-    }
-}
-
-# Configuración de base de datos para Heroku (producción)
+# Configuración para Heroku y desarrollo local (manejo dual)
 try:
-    # Intenta obtener DATABASE_URL. Si no existe, UndefinedValueError será lanzado.
+    # Intenta obtener DATABASE_URL (esto existirá en Heroku)
     DATABASE_URL = config('DATABASE_URL')
-    DATABASES['default'] = dj_database_url.config(
-        default=DATABASE_URL,
-        conn_max_age=600, # Mantener conexiones persistentes por 10 minutos
-        ssl_require=True # Requerir SSL para la conexión a la base de datos (común en Heroku)
-    )
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600, # Mantener conexiones persistentes por 10 minutos
+            ssl_require=True # Requerir SSL para la conexión a la base de datos (común en Heroku)
+        )
+    }
 except UndefinedValueError:
-    # Si DATABASE_URL no está definido (estamos en desarrollo o no configurado),
-    # simplemente usamos la configuración de base de datos definida arriba.
-    pass
+    # Si DATABASE_URL no está definido (estamos en desarrollo local),
+    # usamos las variables del archivo .env para PostgreSQL local.
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME'),
+            'USER': config('DB_USER'),
+            'PASSWORD': config('DB_PASSWORD'),
+            'HOST': config('DB_HOST'),
+            'PORT': config('DB_PORT'),
+        }
+    }
 
 
 # Internationalization
@@ -105,12 +105,13 @@ USE_TZ = True # Habilita zonas horarias
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles' # Directorio donde Django recolectará los estáticos en producción
+# Directorio donde Django recolectará los estáticos en producción.
+# Esto es donde WhiteNoise buscará los archivos.
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Configuración adicional para servir archivos estáticos con Whitenoise en Heroku
-# Si utilizas WhiteNoise, asegúrate de haberlo instalado: pip install whitenoise
+# Asegúrate de haber instalado WhiteNoise: pip install whitenoise
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -131,7 +132,7 @@ CORS_ALLOWED_ORIGINS = [
     # "http://localhost:3000",
     # "http://127.0.0.1:3000",
     # Cuando despliegues en Heroku, añade la URL de tu aplicación.
-    # Ejemplo: "https://your-app-name.herokuapp.com",
+    "https://prueba-django.herokuapp.com", # Asegúrate de que este sea el nombre de tu app Heroku
 ]
 
 # Si prefieres permitir cualquier origen durante el desarrollo (MENOS SEGURO PARA PRODUCCIÓN)
@@ -150,13 +151,10 @@ REST_FRAMEWORK = {
         # Esto es un permiso global por defecto.
         # En tus vistas (api_views.py), estás sobrescribiendo esto con permisos más específicos,
         # lo cual es la mejor práctica.
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly', 
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
     ],
 }
-
-# Configuración para permitir CORS en el Django Admin (opcional, para desarrollo)
-# CORS_URLS_REGEX = r"^/admin/.*$" # Si necesitas CORS en el admin
