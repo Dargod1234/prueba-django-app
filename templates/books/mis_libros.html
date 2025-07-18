@@ -1,65 +1,58 @@
 {% extends 'base.html' %}
-
 {% block title %}Mis Libros - Biblioteca{% endblock %}
-
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h1>Mis Libros</h1>
-        <div class="table-responsive">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Libro</th>
-                        <th>Autor</th>
-                        <th>Fecha Préstamo</th>
-                        <th>Fecha Devolución</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for prestamo in prestamos %}
-                    <tr>
-                        <td>{{ prestamo.libro.titulo }}</td>
-                        <td>{{ prestamo.libro.autor }}</td>
-                        <td>{{ prestamo.fecha_prestamo|date:"d/m/Y H:i" }}</td>
-                        <td>
-                            {% if prestamo.fecha_devolucion %}
-                            {{ prestamo.fecha_devolucion|date:"d/m/Y H:i" }}
-                            {% else %}
-                            -
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if prestamo.activo %}
-                            <span class="badge bg-warning">Prestado</span>
-                            {% else %}
-                            <span class="badge bg-success">Devuelto</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if prestamo.activo %}
-                            <form method="post"
-                                action="{% url 'books:devolver_libro' prestamo.libro.pk %}"
-                                class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit"
-                                    class="btn btn-sm btn-success">Devolver</button>
-                            </form>
-                            {% else %}
-                            -
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6">No tienes libros prestados.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+<h2 class="fw-bold mb-4">📦 Mis Libros Prestados</h2>
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Libro</th>
+                <th>Autor</th>
+                <th>Fecha Préstamo</th>
+                <th>Fecha Devolución</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for prestamo in prestamos %}
+            <tr>
+                <td>{{ prestamo.libro.titulo }}</td>
+                <td>{{ prestamo.libro.autor }}</td>
+                <td>{{ prestamo.fecha_prestamo|date:"d/m/Y H:i" }}</td>
+                <td>
+                    {% if prestamo.fecha_devolucion %}
+                    {{ prestamo.fecha_devolucion|date:"d/m/Y H:i" }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if prestamo.activo %}
+                    <span class="badge bg-warning text-dark">Prestado</span>
+                    {% else %}
+                    <span class="badge bg-success">Devuelto</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if prestamo.activo %}
+                    <form method="post"
+                        action="{% url 'books:devolver_libro' prestamo.libro.pk %}"
+                        class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit"
+                            class="btn btn-sm btn-outline-success">Devolver</button>
+                    </form>
+                    {% else %}-{% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center">No tienes libros
+                    prestados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}
