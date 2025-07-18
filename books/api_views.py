@@ -1,5 +1,5 @@
 from rest_framework import generics, status
-from rest_framework.decorators import api_view, permission_classes # <--- IMPORTANTE: 'permission_classes' debe venir de 'decorators'
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
@@ -7,40 +7,37 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from .models import Libro, Prestamo
-from .serializers import LibroSerializer, PrestamoSerializer # Asumiendo que PrestamoSerializer también se usa si se expande la API
+from .serializers import LibroSerializer, PrestamoSerializer
 from .permissions import IsAdminUserOrReadOnly, IsRegularUser
 
 class LibroListCreateView(generics.ListCreateAPIView):
+    """
+    Vista de API para listar todos los libros y crear nuevos libros.
+    Permite lectura a todos, pero la creación está restringida a usuarios administradores.
+    """
     queryset = Libro.objects.all()
     serializer_class = LibroSerializer
     permission_classes = [IsAdminUserOrReadOnly]
-
-    # perform_create puede usarse para asignar el usuario que crea el libro,
-    # si el modelo Libro tuviera un campo para ello (ej. 'creado_por').
-    # Si no tienes esa lógica, esta sección puede omitirse o mantenerse como un recordatorio.
-    # def perform_create(self, serializer):
-    #     serializer.save(creado_por=self.request.user)
 
 class LibroDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Vista de API para recuperar, actualizar o eliminar un libro específico.
+    Permite lectura a todos, pero la actualización y eliminación están restringidas a administradores.
+    """
     queryset = Libro.objects.all()
     serializer_class = LibroSerializer
     permission_classes = [IsAdminUserOrReadOnly]
-
-    # perform_update y perform_destroy se mantienen solo si hay lógica adicional
-    # más allá de la validación de permisos, como la gestión de stock en el modelo.
-    # La lógica de permisos de rol ya está cubierta por IsAdminUserOrReadOnly.
-    # def perform_update(self, serializer):
-    #     serializer.save()
-
-    # def perform_destroy(self, instance):
-    #     instance.delete()
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsRegularUser])
-def prestar_libro(request, pk):
+def prestar_libro(request, pk: int):
+    """
+    Endpoint de API para que un usuario regular preste un libro.
+    Requiere autenticación y rol 'regular'.
+    """
     libro = get_object_or_404(Libro, pk=pk)
     
-    # Verificar si ya tiene el libro prestado activamente por este usuario
+    # Verifica si el usuario ya tiene este libro prestado activamente.
     prestamo_activo = Prestamo.objects.filter(
         usuario=request.user, 
         libro=libro, 
@@ -54,6 +51,7 @@ def prestar_libro(request, pk):
         )
     
     if libro.stock > 0:
+        # Crea un nuevo registro de préstamo con estado activo.
         Prestamo.objects.create(usuario=request.user, libro=libro, activo=True)
         libro.stock -= 1
         libro.save()
@@ -70,11 +68,15 @@ def prestar_libro(request, pk):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsRegularUser])
-def devolver_libro(request, pk):
+def devolver_libro(request, pk: int):
+    """
+    Endpoint de API para que un usuario regular devuelva un libro.
+    Requiere autenticación y rol 'regular'.
+    """
     libro = get_object_or_404(Libro, pk=pk)
     
     try:
-        # Busca el préstamo ACTIVO que el usuario tiene para este libro
+        # Busca el préstamo activo que el usuario tiene para este libro.
         prestamo = Prestamo.objects.get(
             usuario=request.user, 
             libro=libro, 
@@ -82,7 +84,7 @@ def devolver_libro(request, pk):
         )
         
         prestamo.fecha_devolucion = timezone.now()
-        prestamo.activo = False
+        prestamo.activo = False # Marca el préstamo como inactivo.
         prestamo.save()
         
         libro.stock += 1
@@ -93,8 +95,7 @@ def devolver_libro(request, pk):
             status=status.HTTP_200_OK
         )
     except Prestamo.DoesNotExist:
-        # Si no se encuentra un préstamo activo, significa que el libro no está prestado
-        # o ya ha sido devuelto por este usuario.
+        # Si no se encuentra un préstamo activo, el libro no está prestado o ya ha sido devuelto.
         return Response(
             {'error': 'Este libro no está prestado por ti o ya ha sido devuelto.'}, 
             status=status.HTTP_400_BAD_REQUEST

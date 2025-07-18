@@ -1,8 +1,12 @@
+"""
+Definiciones de URL para la aplicación 'books'.
+Gestiona las rutas para las vistas web tradicionales de la biblioteca.
+"""
 from django.urls import path
 from django.contrib.auth.views import LogoutView
 from . import views
 
-app_name = 'books'
+app_name = 'books' # Define el espacio de nombres de la aplicación para URL inversas
 
 urlpatterns = [
     path('', views.ListarLibrosView.as_view(), name='listar_libros'),

@@ -1,29 +1,34 @@
+"""
+Configuración principal para el proyecto 'biblioteca'.
+Contiene ajustes para la base de datos, aplicaciones instaladas, middleware,
+archivos estáticos, autenticación y configuración de Django REST Framework.
+"""
 from pathlib import Path
 from decouple import config, UndefinedValueError
 import dj_database_url
-import os # Importar os para la compatibilidad con el entorno de Heroku para el static
+import os
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# Define el directorio base del proyecto.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
+# Clave secreta para la seguridad de Django. Se obtiene de las variables de entorno.
 SECRET_KEY = config('SECRET_KEY')
 
-# SECURITY WARNING: don't run with debug turned on in production!
+# Modo de depuración. Se obtiene de las variables de entorno.
 DEBUG = config('DEBUG', default=False, cast=bool)
 
+# Hosts permitidos para servir la aplicación.
 ALLOWED_HOSTS = []
 if not DEBUG:
-    # Para producción, debes especificar los hosts permitidos.
-    # Heroku usa su propio dominio.
-    # Reemplaza 'your-app-name.herokuapp.com' con el nombre real de tu app de Heroku.
-    ALLOWED_HOSTS = ['.herokuapp.com', 'prueba-django-2db3239ec097.herokuapp.com'] # Asegúrate de que este sea el nombre de tu app Heroku
+    # En producción, se especifican los dominios de la aplicación Heroku.
+    ALLOWED_HOSTS = ['.herokuapp.com', 'prueba-django-2db3239ec097.herokuapp.com']
+    # Si se usa un dominio personalizado, se añadiría aquí: ALLOWED_HOSTS.append('tu-dominio.com')
 else:
-    # Para desarrollo local
+    # En desarrollo local, se permiten localhost y 127.0.0.1.
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
-# Application definition
+# Definición de las aplicaciones instaladas en el proyecto.
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -31,17 +36,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',
-    'corsheaders',
-    'books', # Tu aplicación 'books'
+    'rest_framework', # Django REST Framework
+    'corsheaders',    # Para manejar CORS en la API
+    'books',          # Tu aplicación principal
 ]
 
+# Middleware utilizado para procesar solicitudes y respuestas.
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # WhiteNoise debe ir después de SecurityMiddleware para servir estáticos de forma segura
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # Para servir archivos estáticos en producción
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware', # CorsMiddleware en la posición correcta
+    'corsheaders.middleware.CorsMiddleware',      # Debe ir después de SessionMiddleware
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -49,13 +54,15 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# URLconf raíz del proyecto.
 ROOT_URLCONF = 'biblioteca.urls'
 
+# Configuración de los motores de plantillas.
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'], # Asegúrate de que tu carpeta de templates globales esté aquí
-        'APP_DIRS': True,
+        'DIRS': [BASE_DIR / 'templates'], # Directorio para plantillas globales del proyecto
+        'APP_DIRS': True, # Permite a las aplicaciones buscar sus propias plantillas
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -67,23 +74,23 @@ TEMPLATES = [
     },
 ]
 
+# Punto de entrada WSGI para servidores de producción.
 WSGI_APPLICATION = 'biblioteca.wsgi.application'
 
-# Database
-# Configuración para Heroku y desarrollo local (manejo dual)
+# Configuración de la base de datos.
+# Maneja la configuración dual para Heroku (DATABASE_URL) y desarrollo local (.env).
 try:
-    # Intenta obtener DATABASE_URL (esto existirá en Heroku)
+    # Intenta obtener DATABASE_URL (existirá en Heroku).
     DATABASE_URL = config('DATABASE_URL')
     DATABASES = {
         'default': dj_database_url.config(
             default=DATABASE_URL,
             conn_max_age=600, # Mantener conexiones persistentes por 10 minutos
-            ssl_require=True # Requerir SSL para la conexión a la base de datos (común en Heroku)
+            ssl_require=True  # Requerir SSL para la conexión a la base de datos (común en Heroku)
         )
     }
 except UndefinedValueError:
-    # Si DATABASE_URL no está definido (estamos en desarrollo local),
-    # usamos las variables del archivo .env para PostgreSQL local.
+    # Si DATABASE_URL no está definido (desarrollo local), usa las variables del archivo .env.
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -96,65 +103,59 @@ except UndefinedValueError:
     }
 
 
-# Internationalization
+# Configuración de internacionalización.
 LANGUAGE_CODE = 'es-es'
-TIME_ZONE = 'UTC' # Se recomienda UTC para consistencia global
-USE_I18N = True
-USE_TZ = True # Habilita zonas horarias
+TIME_ZONE = 'UTC' # Se recomienda UTC para consistencia global en fechas y horas.
+USE_I18N = True   # Habilita el sistema de traducción de Django.
+USE_TZ = True     # Habilita el soporte para zonas horarias.
 
 
-# Static files (CSS, JavaScript, Images)
+# Configuración de archivos estáticos (CSS, JavaScript, Imágenes).
 STATIC_URL = '/static/'
-# Directorio donde Django recolectará los estáticos en producción.
-# Esto es donde WhiteNoise buscará los archivos.
+# Directorio donde Django recolectará todos los archivos estáticos en producción.
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Configuración adicional para servir archivos estáticos con Whitenoise en Heroku
-# Asegúrate de haber instalado WhiteNoise: pip install whitenoise
+# Configuración de almacenamiento de archivos estáticos para WhiteNoise.
+# Asegúrate de haber instalado WhiteNoise (pip install whitenoise).
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Default primary key field type
+
+# Tipo de campo de clave primaria por defecto para los modelos.
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Custom user model
+# Modelo de usuario personalizado.
 AUTH_USER_MODEL = 'books.Usuario'
 
-# URL de login y logout (para @login_required y LoginRequiredMixin)
-LOGIN_URL = 'books:login' # Nombre de la URL para el login
-LOGIN_REDIRECT_URL = 'books:listar_libros' # A dónde ir después de un login exitoso
-LOGOUT_REDIRECT_URL = 'books:listar_libros' # A dónde ir después de un logout exitoso
+# URLs de login y logout para el sistema de autenticación de Django.
+LOGIN_URL = 'books:login' # Nombre de la URL para el login.
+LOGIN_REDIRECT_URL = 'books:listar_libros' # Redirección después de login exitoso.
+LOGOUT_REDIRECT_URL = 'books:listar_libros' # Redirección después de logout exitoso.
 
-# CORS Headers configuration
+# Configuración de CORS Headers.
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    # Agrega aquí los orígenes de tu frontend si están en otro puerto (ej. React, Vue, Angular)
+    # Agrega aquí los orígenes de tu frontend si están en otro puerto (ej. React, Vue, Angular).
     # "http://localhost:3000",
     # "http://127.0.0.1:3000",
-    # Cuando despliegues en Heroku, añade la URL de tu aplicación.
-    "https://prueba-django.herokuapp.com", # Asegúrate de que este sea el nombre de tu app Heroku
+    # URL de tu aplicación Heroku para permitir solicitudes CORS desde tu propio despliegue.
+    "https://prueba-django-2db3239ec097.herokuapp.com", 
 ]
 
-# Si prefieres permitir cualquier origen durante el desarrollo (MENOS SEGURO PARA PRODUCCIÓN)
-# CORS_ALLOW_ALL_ORIGINS = DEBUG
-
-
-# Django REST Framework configuration
+# Configuración de Django REST Framework.
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
-        # Puedes añadir TokenAuthentication aquí si lo implementas más adelante
-        # 'rest_framework.authentication.TokenAuthentication',
+        # Puedes añadir 'rest_framework.authentication.TokenAuthentication' si implementas tokens.
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        # Esto es un permiso global por defecto.
-        # En tus vistas (api_views.py), estás sobrescribiendo esto con permisos más específicos,
-        # lo cual es la mejor práctica.
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+        # Permiso global por defecto: permite lectura a todos, escritura solo a autenticados.
+        # Las vistas específicas de la API sobrescriben esto con permisos más granulares.
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly', 
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer', # Útil para depuración en el navegador.
     ],
 }
