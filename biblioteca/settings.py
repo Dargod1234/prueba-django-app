@@ -17,7 +17,7 @@ if not DEBUG:
     # Para producción, debes especificar los hosts permitidos.
     # Heroku usa su propio dominio.
     # Reemplaza 'your-app-name.herokuapp.com' con el nombre real de tu app de Heroku.
-    ALLOWED_HOSTS = ['.herokuapp.com', 'prueba-django.herokuapp.com'] # Asegúrate de que este sea el nombre de tu app Heroku
+    ALLOWED_HOSTS = ['.herokuapp.com', 'prueba-django-2db3239ec097.herokuapp.com'] # Asegúrate de que este sea el nombre de tu app Heroku
 else:
     # Para desarrollo local
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
